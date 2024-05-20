@@ -42,16 +42,6 @@ async function main() {
           .then((res) => {
             console.log(res);
           });
-
-        console.log(docOutput);
-        // restaurantCollection
-        //   .add({
-        //     ids: [randomUUID()],
-        //     documents: [data.toString()],
-        //   })
-        //   .then((res) => {
-        //     console.log(res);
-        //   });
       }
     );
   } catch (error) {
