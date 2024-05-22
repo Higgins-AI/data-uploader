@@ -25,15 +25,17 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { CollectionType } from 'chromadb';
+import { postDocument } from '../actions/postDocument';
+import { useCollectionStore } from '../hooks/useCollectionStore';
+import { useToast } from '@/components/ui/use-toast';
 
 const ACCEPTED_FILE_TYPES = ['text/plain'];
 const formSchema = z.object({
   file: typeof window === 'undefined' ? z.any() : z.instanceof(FileList),
-  collection: z.string(),
 });
 
 interface UploadFormProps {
-  collections: CollectionType[];
+  collections?: CollectionType[];
 }
 
 export const UploadForm: React.FC<UploadFormProps> = ({ collections }) => {
@@ -42,12 +44,19 @@ export const UploadForm: React.FC<UploadFormProps> = ({ collections }) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
+  const { collectionName } = useCollectionStore();
+  const { toast } = useToast();
 
   const fileRef = form.register('file');
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    if (data?.collection) {
-      console.log(data.collection);
+    if (!collectionName) {
+      console.log('No collection selected');
+      toast({
+        variant: 'destructive',
+        description: 'No Collection Selected',
+      });
+      return;
     }
     if (data?.file[0]) {
       const reader = new FileReader();
@@ -55,30 +64,53 @@ export const UploadForm: React.FC<UploadFormProps> = ({ collections }) => {
         'load',
         async () => {
           if (reader.result) {
-            const splitter = new RecursiveCharacterTextSplitter({
-              chunkSize: 1000,
-              chunkOverlap: 200,
-            });
-
-            const docOutput = await splitter.splitDocuments([
-              new Document({ pageContent: reader.result?.toString() }),
-            ]);
-            docOutput.forEach((doc) => {
-              //   console.log(doc.pageContent);
-            });
-            // console.log(docOutput);
+            postDocument(reader.result.toString(), collectionName)
+              .then((res) => {
+                if (res) {
+                  toast({
+                    description: `Document Successfully Uploaded to '${collectionName}'`,
+                  });
+                }
+              })
+              .catch((error: any) => {
+                console.log(error);
+                toast({
+                  variant: 'destructive',
+                  description: 'Something went wrong',
+                });
+              });
           }
         },
         false
       );
       reader.readAsText(data.file[0]);
+
+      // const reader = new FileReader();
+      // reader.addEventListener(
+      //   'load',
+      //   async () => {
+      //     if (reader.result) {
+      //       const splitter = new RecursiveCharacterTextSplitter({
+      //         chunkSize: 1000,
+      //         chunkOverlap: 200,
+      //       });
+
+      //       const docOutput = await splitter.splitDocuments([
+      //         new Document({ pageContent: reader.result?.toString() }),
+      //       ]);
+
+      //     }
+      //   },
+      //   false
+      // );
+      // reader.readAsText(data.file[0]);
     }
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
-        {collections && (
+        {/* {collections && (
           <FormField
             control={form.control}
             name='collection'
@@ -109,7 +141,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({ collections }) => {
               </FormItem>
             )}
           />
-        )}
+        )} */}
 
         <FormField
           control={form.control}
@@ -128,7 +160,6 @@ export const UploadForm: React.FC<UploadFormProps> = ({ collections }) => {
                   }
                 />
               </FormControl>
-              <FormDescription>File to upload</FormDescription>
               <FormMessage />
             </FormItem>
           )}
