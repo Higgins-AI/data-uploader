@@ -22,9 +22,7 @@ export async function postDocument(document: string, collectionName: string) {
       chunkOverlap: 200,
     });
 
-    const docOutput = await splitter.splitDocuments([
-      new Document({ pageContent: document }),
-    ]);
+    const docOutput = await splitter.splitDocuments([new Document({ pageContent: document, metadata: { created_on: new Date().toDateString() } })]);
 
     const addResponse = await collection.add({
       ids: docOutput.map(() => randomUUID().toString()),

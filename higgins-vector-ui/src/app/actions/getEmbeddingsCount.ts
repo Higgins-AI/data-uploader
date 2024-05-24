@@ -1,6 +1,6 @@
 'use server';
 import { ChromaClient, OpenAIEmbeddingFunction } from 'chromadb';
-export async function getEmbeddings(collectionName: string, page: number) {
+export async function getEmbeddingsCount(collectionName: string) {
   try {
     const client = new ChromaClient({
       path: process.env.CHROMADB_PRO_URL,
@@ -13,9 +13,9 @@ export async function getEmbeddings(collectionName: string, page: number) {
       embeddingFunction: openAIEmbedder,
     });
     if (collection) {
-      const embeddings = await collection.get({ limit: 10, offset: 10 * (page - 1) });
-      if (embeddings) {
-        return embeddings;
+      const count = await collection.count();
+      if (count) {
+        return count;
       }
     }
     return undefined;
